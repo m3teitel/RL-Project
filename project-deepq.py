@@ -32,7 +32,8 @@ from mushroom_rl.utils.table import Table
 
 class RetroFullEnvironment(RetroEnvironment):
 	def __init__(self, game, horizon, gamma, **env_args):
-		super.__init__(self, game, horizon, gamma, **env_args)
+		super(RetroFullEnvironment, self).__init__(game, horizon, gamma,
+			**env_args)
 		
 	def step(self, action):
 		action = self._convert_action(action)
@@ -49,10 +50,12 @@ class Network(nn.Module):
 		n_input = input_shape[0]
 		n_output = output_shape[0]
 
-		self._h1 = nn.Conv2d(n_input, 32, kernel_size=8, stride=4)
+		#self._h1 = nn.Conv2d(n_input, 32, kernel_size=8, stride=4)
+		self._h1 = nn.Conv2d(3, 32, kernel_size=8, stride=4)
 		self._h2 = nn.Conv2d(32, 64, kernel_size=4, stride=2)
 		self._h3 = nn.Conv2d(64, 64, kernel_size=3, stride=1)
-		self._h4 = nn.Linear(3136, self.n_features)
+		#self._h4 = nn.Linear(3136, self.n_features)
+		self._h4 = nn.Linear(39936, self.n_features)
 		self._h5 = nn.Linear(self.n_features, n_output)
 
 		nn.init.xavier_uniform_(self._h1.weight,
@@ -67,13 +70,30 @@ class Network(nn.Module):
 								gain=nn.init.calculate_gain('linear'))
 	
 	def forward(self, state, action=None):
-		print(state, file=sys.stderr)
-		print(state.size(), file=sys.stderr)
+		debug = False
+		
+		#print(state, file=sys.stderr)
+		if debug: print('input', state.size(), file=sys.stderr)
+		state = state.permute(0, 3, 1, 2)
+		if debug: print('resized', state.size(), file=sys.stderr)
 		h = F.relu(self._h1(state.float() / 255.))
+		if debug: print('layer 1', h.size(), file=sys.stderr)
 		h = F.relu(self._h2(h))
+		if debug: print('layer 2', h.size(), file=sys.stderr)
 		h = F.relu(self._h3(h))
-		h = F.relu(self._h4(h.view(-1, 3136)))
-		q = self._h5(h)
+		if debug: print('layer 3', h.size(), file=sys.stderr)
+		#print(self._flat_features_len(h), file=sys.stderr)
+		h = h.view(-1, self._flat_features_len(h))
+		if debug: print('flattened', h.size(), file=sys.stderr)
+		h = F.relu(self._h4(h))
+		if debug: print('layer 4', h.size(), file=sys.stderr)
+		h = self._h5(h)
+		if debug: print('layer 5', h.size(), file=sys.stderr)
+
+		q = h
+		
+		#print(q)
+		#print(q.size())
 
 		if action is None:
 			return q
@@ -82,10 +102,17 @@ class Network(nn.Module):
 
 			return q_acted
 
+	def _flat_features_len(self, h):
+		size = h.size()[1:]
+		num_features = 1
+		for s in size:
+			num_features *= s
+		return num_features
+
 def main(argv):
 	#env = retro.make(game='MegaMan-Nes', obs_type=retro.Observations.RAM)
-	mdp = RetroEnvironment('MegaMan-Nes', 5000, 0.9,
-		obs_type=retro.Observations.RAM,
+	mdp = RetroFullEnvironment('MegaMan-Nes', 5000, 0.9,
+		#obs_type=retro.Observations.RAM,
 		use_restricted_actions=retro.Actions.DISCRETE)
 	
 	epsilon = Parameter(value=1.)
@@ -133,7 +160,8 @@ def main(argv):
 		approximator_params=approximator_params, **algorithm_params)
 	
 	core = Core(agent, mdp)
-	core.learn(n_steps=1000000, n_steps_per_fit=1)
+	#core.learn(n_steps=1000000, n_steps_per_fit=1)
+	core.learn(n_steps=100000, n_steps_per_fit=1)
 	core.evaluate(n_episodes=10, render=True)
 	
 	
