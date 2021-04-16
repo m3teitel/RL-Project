@@ -1,0 +1,32 @@
+{
+  "crop": [
+    0,
+    0,
+    0,
+    0
+  ],
+  "done": {
+    "variables": {
+      "health": {
+        "op": "equal"
+      },
+      "lives": {
+        "measurement": "delta",
+        "op": "nonzero"
+      }
+    }
+  },
+  "reward": {
+    "variables": {
+      "megaXScreen": {
+        "reward": 1.0
+      },
+      "score": {
+        "reward": 1.0
+      },
+      "screenpos": {
+        "reward": 300.0
+      }
+    }
+  }
+}

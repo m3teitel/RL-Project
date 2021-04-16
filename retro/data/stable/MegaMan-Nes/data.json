@@ -1,0 +1,32 @@
+{
+  "info": {
+    "health": {
+      "address": 106,
+      "type": "|u1"
+    },
+    "lives": {
+      "address": 166,
+      "type": "|u1"
+    },
+    "megaXScreen": {
+      "address": 1152,
+      "type": "|u1"
+    },
+    "score": {
+      "address": 87,
+      "type": "<n4"
+    },
+    "screenpos": {
+      "address": 1120,
+      "type": "|u1"
+    },
+    "x": {
+      "address": 34,
+      "type": "|u1"
+    },
+    "y": {
+      "address": 37,
+      "type": "|u1"
+    }
+  }
+}

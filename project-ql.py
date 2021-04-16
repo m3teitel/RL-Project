@@ -3,6 +3,7 @@
 # make sure to import the rom first
 # `python3 -m retro.import "./Rom NoIntro/"`
 
+import os
 import numpy as np
 import retro
 import sys
@@ -22,9 +23,12 @@ from util import RetroEnvironment
 
 def main(argv):
 	#env = retro.make(game='MegaMan-Nes', obs_type=retro.Observations.RAM)
-	env = RetroEnvironment('MegaMan-Nes', 10000, 0.9, obs_shape=256**3, \
+	SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+	retro.data.Integrations.add_custom_path(os.path.join(SCRIPT_DIR, "integrations"))
+	print("megamanmain" in retro.data.list_games(inttype=retro.data.Integrations.ALL))
+	env = RetroEnvironment('megamanmain', 5000, 0.9, obs_shape=256**3, \
 		obs_type=retro.Observations.RAM, \
-		use_restricted_actions=retro.Actions.DISCRETE)
+		use_restricted_actions=retro.Actions.DISCRETE,inttype=retro.data.Integrations.ALL)
 	
 	epsilon = Parameter(value=1.)
 	learning_rate = Parameter(value=0.3)
@@ -35,7 +39,7 @@ def main(argv):
 	#agent = CustomSARSA(env.info, policy, learning_rate)
 	
 	core = Core(agent, env)
-	core.learn(n_episodes=10, n_steps_per_fit=1)
+	core.learn(n_episodes=50, n_steps_per_fit=1)
 	core.evaluate(n_episodes=2, render=True)
 	
 	
