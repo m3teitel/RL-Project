@@ -1,7 +1,13 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
+
+#https://github.com/keras-rl/keras-rl/blob/master/examples/dqn_cartpole.py
+
 
 import sys
 import os
+
+import gym
+import retro
 
 os.environ['KERAS_BACKEND'] = 'plaidml.keras.backend'
 import keras
@@ -9,10 +15,8 @@ from keras import backend as K
 from keras.models import Sequential
 from keras import layers
 
-import rl
+#import rl
 
-import gym
-import retro
 
 class Network(keras.Model):
 	_n_features = 2048
@@ -53,7 +57,8 @@ def main(args):
 	env = retro.make('MegaMan-Nes', #5000, 0.9,
 		#obs_type=retro.Observations.RAM,
 		use_restricted_actions=retro.Actions.DISCRETE)
-	
+	network = Network(env.observation_space.shape, env.action_space.n)
+	print(network.summary(), file=sys.stderr)
 	
 	return 0
 
