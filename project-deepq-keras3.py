@@ -16,10 +16,12 @@ from keras.models import Sequential
 from keras import layers
 from keras.optimizers import Adam
 
+import huskarl as hk
+
 #import rl
-from rl.agents.dqn import DQNAgent
-from rl.policy import EpsGreedyQPolicy
-from rl.memory import SequentialMemory
+#from rl.agents.dqn import DQNAgent
+#from rl.policy import EpsGreedyQPolicy
+#from rl.memory import SequentialMemory
 
 '''class Network(keras.Sequential):
 	_n_features = 2048
@@ -57,47 +59,39 @@ from rl.memory import SequentialMemory
 
 
 def main(args):
-	env = retro.make('MegaMan-Nes', #5000, 0.9,
+#	env = retro.make('MegaMan-Nes', #5000, 0.9,
+	make_env = lambda: retro.make('MegaMan-Nes',
 		#obs_type=retro.Observations.RAM,
 		use_restricted_actions=retro.Actions.DISCRETE)
 	#network = Network(env.observation_space.shape, env.action_space.n)
-	network = Sequential()
-	network.add(layers.Input(env.observation_space.shape))
-	network.add(layers.Conv2D(32, 8, strides=4))#, activation='relu'))
-	network.add(layers.Activation('relu'))
-	network.add(layers.Conv2D(64, 4, strides=2))#, activation='relu'))
-	network.add(layers.Activation('relu'))
-	network.add(layers.Conv2D(64, 3, strides=1))#, activation='relu'))
-	network.add(layers.Activation('relu'))
-	network.add(layers.Flatten())
-	network.add(layers.Dense(2048, activation='relu'))
-	network.add(layers.Activation('relu'))
-	network.add(layers.Dense(env.action_space.n))#, activation='relu'))
-	network.add(layers.Activation('linear'))
+	env = make_env()
 	
-	'''network = Sequential([
+	network = Sequential([
 		layers.Conv2D(32, 8, strides=4, input_shape=env.observation_space.shape,
 			activation='relu'),
 		layers.Conv2D(64, 4, strides=3, activation='relu'),
 		layers.Conv2D(64, 3, strides=2, activation='relu'),
 		layers.Flatten(),
 		layers.Dense(2048, activation='relu'),
-		layers.Dense(env.action_space.n)])'''
+		layers.Dense(env.action_space.n)])
 	network.summary()
-	print(env.observation_space.shape, file=sys.stderr)
-	print('MODEL OUTPUT: ', network.output, file=sys.stderr)
-	print('MODEL HAS LEN: ', hasattr(network.output, '__len__'), file=sys.stderr)
-	print('MODEL LEN: ', len(network.output), file=sys.stderr)
 	
-	memory = SequentialMemory(limit=50000, window_length=1)
-	policy = EpsGreedyQPolicy(eps=0.1)
-	dqn = DQNAgent(model=network, nb_actions=env.action_space.n,
-		memory=memory, nb_steps_warmup=10, batch_size=32, policy=policy)
-	dqn.compile(Adam(lr=1e-3), metrics=['mae'])
+	dqn = hk.agent.DQN(network, actions=env.action_space.n, nsteps=50000)
+	env.close()
+
+	sim = hk.Simulation(make_env, dqn)
+	sim.train(max_steps=3000, visualize=True)
+	sim.test(max_steps=1000)
+
+	#memory = SequentialMemory(limit=50000, window_length=1)
+	#policy = EpsGreedyQPolicy(eps=0.1)
+	#dqn = DQNAgent(model=network, nb_actions=env.action_space.n,
+	#	memory=memory, nb_steps_warmup=10, batch_size=32, policy=policy)
+	#dqn.compile(Adam(lr=1e-3), metrics=['mae'])
 	
-	dqn.fit(env, nb_steps=50000, visualize=True, verbose=2)
+	#dqn.fit(env, nb_steps=50000, visualize=True, verbose=2)
 	
-	dqn.test(env, nb_episodes=10, visualize=True)
+	#dqn.test(env, nb_episodes=10, visualize=True)
 	
 	
 	
