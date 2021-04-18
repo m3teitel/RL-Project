@@ -183,36 +183,30 @@ class KerasApproximator(Serializable):
 		#if use_weights:
 			#weights = K.eval(batch[-1])
 			#batch = batch[:-1]
-		batch = batch[:-1]
+		#batch = batch[:-1]
 		
 		raw_args = [ K.constant(x) for x in batch ]
 		x = raw_args[:-self._n_fit_targets]
+		actions = x[1] if len(x) > 1 else None
+		x = x[0]
 
-		y_hat = np.array([K.eval(self.network(x2, **kwargs)) for x2 in x])
-		#y_hat = self.network(x, **kwargs)
-		print(y_hat, file=sys.stderr)
-		#if isinstance(y_hat, tuple):
-		#	output_type = K.dtype(y_hat[0])
-		#else:
-		#	output_type = K.dtype(y_hat)
-		#print(output_type, file=sys.stderr)
-		#y = [ K.variable(y_i, dtype=output_type) for y_i in batch[-self._n_fit_targets] ]
-		#y = [ K.variable(y_i) for y_i in batch[-self._n_fit_targets:] ]
-		#y = np.array([ K.constant(y_i) for y_i in batch[-self._n_fit_targets:] ])
-		y = np.array(batch[-self._n_fit_targets:])
-		#print(K.dtype(y[0]), file=sys.stderr)
+		y_hat = self.network(x, **kwargs)
+		if actions is not None:
+			actions = K.eval(K.cast(K.squeeze(actions, 1), 'int32'))
+			y_hat = K.constant([ r[actions[i]] for i, r in enumerate(K.eval(y_hat)) ])
+		
+		y = K.squeeze(K.constant(np.array(batch[-self._n_fit_targets:])), 0)
+		#print(y_hat, file=sys.stderr)
+		#print(y, file=sys.stderr)
 		
 		if not use_weights:
-			#loss = self._loss(K.constant(y_hat), K.constant(y))
-			print(y.shape)
-			print(y_hat.shape)
+			#print(y.shape)
+			#print(y_hat.shape)
 			loss = self._loss(y_hat, y[0])
 		else:
 			raise NotImplementedError
 		
 		return loss
-		
-		
 		
 	def set_weights(self, weights):
 		"""

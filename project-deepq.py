@@ -46,9 +46,9 @@ class RetroFullEnvironment(RetroEnvironment):
 		obs, rew, done, info = self.env.step(action)
 		return obs, rew, done, info
 
-'''# This network does not work
+# This network does not work
 # Dimension error, need to rework
-class Network(nn.Module):
+'''class Network(nn.Module):
 	n_features = 2048
 	def __init__(self, input_shape, output_shape, **kwargs):
 		super(Network, self).__init__()
@@ -140,7 +140,8 @@ def main(argv):
 	train_frequency = 4
 	evaluation_frequency = 250000
 	target_update_frequency = 10000
-	initial_replay_size = 50000
+	#initial_replay_size = 50000
+	initial_replay_size = 500
 	max_replay_size = 500000
 	test_samples = 125000
 	max_steps = 50000000
@@ -153,14 +154,17 @@ def main(argv):
 	
 	
 	optimizer = {
-		'class': Adam,
+		#'class': optim.Adam,
 		#'params': dict(lr=0.00025)
+		'class': Adam,
 		'params': dict(learning_rate=0.00025)
 	}
 
 	approximator = KerasApproximator
+	#approximator = TorchApproximator
 	approximator_params = dict(
 		network=model,
+		#network=Network,
 		input_shape=mdp.info.observation_space.shape,
 		output_shape=(mdp.info.action_space.n,),
 		n_actions=mdp.info.action_space.n,
