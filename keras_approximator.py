@@ -44,7 +44,7 @@ class KerasApproximator(Serializable):
 		#self.network.summary()
 		
 		if (optimizer is not None):
-			self._optimizer = optimizer
+			self._optimizer = optimizer['class'](**optimizer['params'])
 		
 		self._loss = loss
 	
@@ -175,9 +175,14 @@ class KerasApproximator(Serializable):
 		return np.mean(loss_current)
 	
 	def _fit_batch(self, batch, use_weights, kwargs):
-		loss = self._compute_batch_loss(batch, use_weights, kwargs)
-		print('_fit_batch:179', loss, file=sys.stderr)
-		raise NotImplementedError
+		loss = K.eval(self._compute_batch_loss(batch, use_weights, kwargs))
+		#print('calculated loss', loss, file=sys.stderr)
+		
+		#self._optimizer.minimize(loss, self.network.get_trainable_variables)
+		_v = self._optimizer.get_updates(loss, self.network.trainable_weights)
+		#print('_v', np.array(_v), file=sys.stderr)
+		#input('press enter to continue')
+		return loss
 	
 	def _compute_batch_loss(self, batch, use_weights, kwargs):
 		#if use_weights:
@@ -193,6 +198,7 @@ class KerasApproximator(Serializable):
 		y_hat = self.network(x, **kwargs)
 		if actions is not None:
 			actions = K.eval(K.cast(K.squeeze(actions, 1), 'int32'))
+			# This should be replaces with a K.squeeze, but it isn't working
 			y_hat = K.constant([ r[actions[i]] for i, r in enumerate(K.eval(y_hat)) ])
 		
 		y = K.squeeze(K.constant(np.array(batch[-self._n_fit_targets:])), 0)

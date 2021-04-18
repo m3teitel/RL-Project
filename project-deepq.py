@@ -140,8 +140,8 @@ def main(argv):
 	train_frequency = 4
 	evaluation_frequency = 250000
 	target_update_frequency = 10000
-	#initial_replay_size = 50000
-	initial_replay_size = 500
+	initial_replay_size = 50000
+	#initial_replay_size = 500
 	max_replay_size = 500000
 	test_samples = 125000
 	max_steps = 50000000
@@ -155,9 +155,8 @@ def main(argv):
 	
 	optimizer = {
 		#'class': optim.Adam,
-		#'params': dict(lr=0.00025)
 		'class': Adam,
-		'params': dict(learning_rate=0.00025)
+		'params': dict(lr=0.00025)
 	}
 
 	approximator = KerasApproximator
