@@ -61,7 +61,7 @@ def main(args):
 		#obs_type=retro.Observations.RAM,
 		use_restricted_actions=retro.Actions.DISCRETE)
 	#network = Network(env.observation_space.shape, env.action_space.n)
-	network = Sequential()
+	'''network = Sequential()
 	network.add(layers.Input(env.observation_space.shape))
 	network.add(layers.Conv2D(32, 8, strides=4))#, activation='relu'))
 	network.add(layers.Activation('relu'))
@@ -73,21 +73,21 @@ def main(args):
 	network.add(layers.Dense(2048, activation='relu'))
 	network.add(layers.Activation('relu'))
 	network.add(layers.Dense(env.action_space.n))#, activation='relu'))
-	network.add(layers.Activation('linear'))
+	network.add(layers.Activation('linear'))'''
 	
-	'''network = Sequential([
+	network = Sequential([
 		layers.Conv2D(32, 8, strides=4, input_shape=env.observation_space.shape,
 			activation='relu'),
 		layers.Conv2D(64, 4, strides=3, activation='relu'),
 		layers.Conv2D(64, 3, strides=2, activation='relu'),
 		layers.Flatten(),
 		layers.Dense(2048, activation='relu'),
-		layers.Dense(env.action_space.n)])'''
+		layers.Dense(env.action_space.n)])
 	network.summary()
 	print(env.observation_space.shape, file=sys.stderr)
 	print('MODEL OUTPUT: ', network.output, file=sys.stderr)
 	print('MODEL HAS LEN: ', hasattr(network.output, '__len__'), file=sys.stderr)
-	print('MODEL LEN: ', len(network.output), file=sys.stderr)
+	#print('MODEL LEN: ', len(network.output), file=sys.stderr)
 	
 	memory = SequentialMemory(limit=50000, window_length=1)
 	policy = EpsGreedyQPolicy(eps=0.1)

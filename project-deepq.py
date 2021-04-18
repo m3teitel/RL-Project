@@ -4,10 +4,20 @@
 # `python3 -m retro.import "./Rom NoIntro/"`
 
 #import numpy as np
-import torch
+'''import torch
 import torch.nn as nn
 import torch.optim as optim
-import torch.nn.functional as F
+import torch.nn.functional as F'''
+
+import os
+os.environ['KERAS_BACKEND'] = 'plaidml.keras.backend'
+
+import keras
+from keras import backend as K
+from keras import layers
+from keras.models import Sequential
+from keras.optimizers import Adam
+from keras.losses import mean_squared_error
 
 import retro
 import sys
@@ -15,20 +25,16 @@ import multiprocessing
 
 from mushroom_rl.utils.parameters import Parameter
 from mushroom_rl.policy import EpsGreedy
-#from mushroom_rl.algorithms.value.td import SARSA
 from mushroom_rl.core.core import Core
 
 from mushroom_rl.algorithms.value import DQN
-from mushroom_rl.approximators.parametric import TorchApproximator
+#from mushroom_rl.approximators.parametric import TorchApproximator
+from keras_approximator import KerasApproximator
 
 from gym import spaces as gym_spaces
 from mushroom_rl.environments import MDPInfo
-from mushroom_rl.utils.spaces import *
 
 from util import RetroEnvironment
-
-from mushroom_rl.algorithms.value.td import TD
-from mushroom_rl.utils.table import Table
 
 class RetroFullEnvironment(RetroEnvironment):
 	def __init__(self, game, horizon, gamma, **env_args):
@@ -40,7 +46,7 @@ class RetroFullEnvironment(RetroEnvironment):
 		obs, rew, done, info = self.env.step(action)
 		return obs, rew, done, info
 
-# This network does not work
+'''# This network does not work
 # Dimension error, need to rework
 class Network(nn.Module):
 	n_features = 2048
@@ -107,7 +113,20 @@ class Network(nn.Module):
 		num_features = 1
 		for s in size:
 			num_features *= s
-		return num_features
+		return num_features'''
+
+def model(input_shape, output_shape, n_features=2048, print_summary=False):
+	net = Sequential([
+		layers.Conv2D(32, 8, strides=4, input_shape=input_shape,
+			activation='relu'),
+		layers.Conv2D(64, 4, strides=3, activation='relu'),
+		layers.Conv2D(64, 3, strides=2, activation='relu'),
+		layers.Flatten(),
+		layers.Dense(n_features, activation='relu'),
+		layers.Dense(output_shape[0])])
+	if print_summary:
+		net.summary()
+	return net
 
 def main(argv):
 	#env = retro.make(game='MegaMan-Nes', obs_type=retro.Observations.RAM)
@@ -134,19 +153,22 @@ def main(argv):
 	
 	
 	optimizer = {
-		'class': optim.Adam,
-		'params': dict(lr=0.00025)
+		'class': Adam,
+		#'params': dict(lr=0.00025)
+		'params': dict(learning_rate=0.00025)
 	}
 
-	approximator = TorchApproximator
+	approximator = KerasApproximator
 	approximator_params = dict(
-		network=Network,
+		network=model,
 		input_shape=mdp.info.observation_space.shape,
 		output_shape=(mdp.info.action_space.n,),
 		n_actions=mdp.info.action_space.n,
-		n_features=Network.n_features,
+		n_features=2048,
 		optimizer=optimizer,
-		loss=F.smooth_l1_loss
+		#loss=F.smooth_l1_loss
+		loss=mean_squared_error,
+		print_summary=True
 	)
 	
 	algorithm_params = dict(

@@ -16,59 +16,20 @@ from keras import layers
 import gym
 import retro
 
-# ~ class EnvironmentWrapper(object):
-	# ~ def __init__(self, env):
-		# ~ self.env = env
-		
-		# ~ self.observation_space = None
-		# ~ if (obs_shape == None):
-			# ~ self.observation_space = self._convert_gym_space(self.env.observation_space)
-		# ~ else:
-			# ~ self.observation_space = Discrete(obs_shape)
-		# ~ self.action_space = self._convert_gym_space(self.env.action_space)
-	
-	# ~ @staticmethod
-	# ~ def _convert_gym_space(space):
-		# ~ if isinstance(space, gym_spaces.Discrete):
-			# ~ return Discrete(space.n)
-		# ~ elif isinstance(space, gym_spaces.Box):
-			# ~ return Box(low=space.low, high=space.high, shape=space.shape)
-		# ~ else:
-			# ~ raise ValueError
+def create_model(env):
+	return Sequential([
+		layers.Conv2D(32, 8, strides=4, input_shape=env.observation_space.shape,
+			activation='relu'),
+		layers.Conv2D(64, 4, strides=3, activation='relu'),
+		layers.Conv2D(64, 3, strides=2, activation='relu'),
+		layers.Flatten(),
+		layers.Dense(2048, activation='relu'),
+		layers.Dense(env.action_space.n)])
 
-class Network(keras.Model):
-	_n_features = 2048
-	
-	def __init__(self, input_shape, output_len):
-		super(Network, self).__init__()
+class DQN(object):
+	def __init__(self, model, policy, optimizer):
+		pass
 		
-		self.l1 = layers.Conv2D(32, 8, strides=4, activation='relu')
-		self.l2 = layers.Conv2D(64, 4, strides=2, activation='relu')
-		self.l3 = layers.Conv2D(64, 3, strides=1, activation='relu')
-		
-		self.l4 = layers.Flatten()
-		
-		self.l5 = layers.Dense(self._n_features, activation='relu')
-		self.l6 = layers.Dense(output_len, activation='linear')
-	
-	def call(self, inputs, training=False):
-		debug = False
-		
-		if debug: print('input: ', inputs, file=sys.stderr)
-		h = self.l1(inputs)
-		if debug: print('layer 1: ', h, file=sys.stderr)
-		h = self.l2(h)
-		if debug: print('layer 2: ', h, file=sys.stderr)
-		h = self.l3(h)
-		if debug: print('layer 3: ', h, file=sys.stderr)
-		h = self.l4(h)
-		if debug: print('layer 4: ', h, file=sys.stderr)
-		h = self.l5(h)
-		if debug: print('layer 5: ', h, file=sys.stderr)
-		h = self.l6(h)
-		if debug: print('output: ', h, file=sys.stderr)
-		
-		return h
 
 # Constants
 def EPSILON_MAX(): return 1.0
@@ -89,8 +50,19 @@ def main(args):
 	
 	epsilon = EPSILON_MAX()
 	gamma = 0.99
-	model = Network(env.observation_space.shape, env.action_space.n)
-	target = Network(env.observation_space.shape, env.action_space.n)
+	model = create_model(env)
+	model.summary()
+	
+	print(env.observation_space.shape)
+	inp = np.array([[[[1]*3]*240]*224])
+	#inp = K.constant([[[1]*3]*240]*224)
+	print(K.constant(inp), file=sys.stderr)
+	output = model(K.constant(inp))
+	print(output, file=sys.stderr)
+	return 1
+	
+	target = create_model(env)
+	
 	optimizer = keras.optimizers.Adam(lr=0.00025, clipnorm=1.0)
 	
 	action_history = []
@@ -140,9 +112,11 @@ def main(args):
 				indices = np.random.choice(range(len(done_history)), size=BATCH_SIZE())
 				print([state_history[i] for i in indices], file=sys.stderr)
 				#state_sample = np.array([state_history[i] for i in indices])
-				state_sample = K.constant([state_history[i] for i in indices])
+				#state_sample = K.constant([state_history[i] for i in indices])
+				state_sample = [state_history[i] for i in indices]
 				#state_next_sample = np.array([state_next_history[i] for i in indices])
-				state_next_sample = K.constant([state_next_history[i] for i in indices])
+				#state_next_sample = K.constant([state_next_history[i] for i in indices])
+				state_next_sample = [state_next_history[i] for i in indices]
 				rewards_sample = [rewards_history[i] for i in indices]
 				action_sample = [action_history[i] for i in indices]
 				done_sample = K.constant([float(done_history[i]) for i in indices])
