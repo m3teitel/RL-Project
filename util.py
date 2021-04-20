@@ -75,3 +75,12 @@ class RetroEnvironment(Environment):
 		else:
 			raise ValueError
 
+class RetroFullEnvironment(RetroEnvironment):
+	def __init__(self, game, horizon, gamma, **env_args):
+		super(RetroFullEnvironment, self).__init__(game, horizon, gamma,
+			**env_args)
+		
+	def step(self, action):
+		action = self._convert_action(action)
+		obs, rew, done, info = self.env.step(action)
+		return obs, rew, done, info

@@ -3,21 +3,10 @@
 # make sure to import the rom first
 # `python3 -m retro.import "./Rom NoIntro/"`
 
-#import numpy as np
-'''import torch
+import torch
 import torch.nn as nn
 import torch.optim as optim
-import torch.nn.functional as F'''
-
-import os
-os.environ['KERAS_BACKEND'] = 'plaidml.keras.backend'
-
-import keras
-from keras import backend as K
-from keras import layers
-from keras.models import Sequential
-from keras.optimizers import Adam
-from keras.losses import mean_squared_error
+import torch.nn.functional as F
 
 import retro
 import sys
@@ -28,27 +17,14 @@ from mushroom_rl.policy import EpsGreedy
 from mushroom_rl.core.core import Core
 
 from mushroom_rl.algorithms.value import DQN
-#from mushroom_rl.approximators.parametric import TorchApproximator
-from keras_approximator import KerasApproximator
+from mushroom_rl.approximators.parametric import TorchApproximator
 
 from gym import spaces as gym_spaces
 from mushroom_rl.environments import MDPInfo
 
-from util import RetroEnvironment
+from util import RetroFullEnvironment
 
-class RetroFullEnvironment(RetroEnvironment):
-	def __init__(self, game, horizon, gamma, **env_args):
-		super(RetroFullEnvironment, self).__init__(game, horizon, gamma,
-			**env_args)
-		
-	def step(self, action):
-		action = self._convert_action(action)
-		obs, rew, done, info = self.env.step(action)
-		return obs, rew, done, info
-
-# This network does not work
-# Dimension error, need to rework
-'''class Network(nn.Module):
+class Network(nn.Module):
 	n_features = 2048
 	def __init__(self, input_shape, output_shape, **kwargs):
 		super(Network, self).__init__()
@@ -113,23 +89,9 @@ class RetroFullEnvironment(RetroEnvironment):
 		num_features = 1
 		for s in size:
 			num_features *= s
-		return num_features'''
-
-def model(input_shape, output_shape, n_features=2048, print_summary=False):
-	net = Sequential([
-		layers.Conv2D(32, 8, strides=4, input_shape=input_shape,
-			activation='relu'),
-		layers.Conv2D(64, 4, strides=3, activation='relu'),
-		layers.Conv2D(64, 3, strides=2, activation='relu'),
-		layers.Flatten(),
-		layers.Dense(n_features, activation='relu'),
-		layers.Dense(output_shape[0])])
-	if print_summary:
-		net.summary()
-	return net
+		return num_features
 
 def main(argv):
-	#env = retro.make(game='MegaMan-Nes', obs_type=retro.Observations.RAM)
 	mdp = RetroFullEnvironment('MegaMan-Nes', 5000, 0.9,
 		#obs_type=retro.Observations.RAM,
 		use_restricted_actions=retro.Actions.DISCRETE)
@@ -147,31 +109,21 @@ def main(argv):
 	max_steps = 50000000
 	
 	policy = EpsGreedy(epsilon=epsilon)
-	#agent = SARSA(env.info, policy, learning_rate)
-	#agent = CustomSARSA(env.info, policy, learning_rate)
-	
-	#history_length = 1
-	
 	
 	optimizer = {
-		#'class': optim.Adam,
-		'class': Adam,
+		'class': optim.Adam,
 		'params': dict(lr=0.00025)
 	}
 
-	approximator = KerasApproximator
-	#approximator = TorchApproximator
+	approximator = TorchApproximator
 	approximator_params = dict(
-		network=model,
-		#network=Network,
+		network=Network,
 		input_shape=mdp.info.observation_space.shape,
 		output_shape=(mdp.info.action_space.n,),
 		n_actions=mdp.info.action_space.n,
 		n_features=2048,
 		optimizer=optimizer,
-		#loss=F.smooth_l1_loss
-		loss=mean_squared_error,
-		print_summary=True
+		loss=F.smooth_l1_loss
 	)
 	
 	algorithm_params = dict(
@@ -188,17 +140,6 @@ def main(argv):
 	#core.learn(n_steps=1000000, n_steps_per_fit=1)
 	core.learn(n_steps=100000, n_steps_per_fit=1)
 	core.evaluate(n_episodes=10, render=True)
-	
-	
-	'''print(agent.Q.shape, file=sys.stderr)
-	shape = agent.Q.shape
-	q = np.zeros(shape)
-	for i in range(shape[0]):
-		for j in range(shape[1]):
-			state = np.array([i])
-			action = np.array([j])
-			q[i, j] = agent.Q.predict(state, action)
-	print(q)'''
 	
 	return 0
 
